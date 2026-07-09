@@ -1,7 +1,8 @@
 import json
 import re
 
-from app.services.llm_service import call_llm
+from app.core.llm_service import call_llm
+from app.prompts.content_writer_prompts import build_product_normalization_prompt
 
 
 def extract_json_text(response: str) -> str:
@@ -57,38 +58,7 @@ def normalize_features(value) -> list[str]:
 
 def normalize_product(raw: dict, index: int) -> dict:
     fallback_product_id = f"p{index + 1:03d}"
-
-    prompt = f"""
-너는 제각각인 상품 JSON을 표준 상품 JSON으로 정규화하는 에이전트야.
-
-반드시 JSON 객체만 반환해.
-설명 문장, 마크다운, 코드블록, 주석은 절대 쓰지 마.
-
-규칙:
-- 입력 key 이름은 한국어, 영어, camelCase, snake_case, 축약어여도 의미를 추론해서 매핑해.
-- product_id는 원본에 id, product_id, sku, code 같은 값이 있으면 사용하고, 없으면 "{fallback_product_id}"를 사용해.
-- product_name은 반드시 채워야 한다. 상품명을 추론할 수 없으면 null로 둬.
-- price는 숫자로 변환해. 예: "12,900원" -> 12900
-- category, target_customer, pain_point, product_url은 없으면 null
-- features는 반드시 문자열 배열로 반환해. 문자열 하나면 의미 단위로 분리해.
-- 원본에 없는 사실은 지어내지 마.
-
-반환 스키마:
-{{
-  "product_id": "문자열",
-  "product_name": "상품명 또는 null",
-  "price": 12900,
-  "category": "카테고리 또는 null",
-  "features": ["특징1", "특징2"],
-  "target_customer": "타겟 고객 또는 null",
-  "pain_point": "고객의 문제/불편함 또는 null",
-  "product_url": "상품 URL 또는 null"
-}}
-
-입력 상품 JSON:
-{json.dumps(raw, ensure_ascii=False)}
-"""
-
+    prompt = build_product_normalization_prompt(raw, fallback_product_id)
     response = call_llm(prompt)
     json_text = extract_json_text(response)
 
