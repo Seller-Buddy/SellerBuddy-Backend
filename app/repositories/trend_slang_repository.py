@@ -1,9 +1,15 @@
 import json
+import logging
 import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
 from app.models.trend_slang import TrendSlangSource
+
+logger = logging.getLogger(__name__)
+
+MAX_CONTEXT_ITEMS = 20
+MAX_CONTEXT_SUMMARIES = 8
 
 
 def _utcnow() -> datetime:
@@ -13,6 +19,7 @@ def _utcnow() -> datetime:
 class TrendSlangRepository:
     def __init__(self, db_path: str | None = None):
         self.db_path = db_path or os.getenv("APP_DB_PATH", "shopbuddy.db")
+        logger.info("trend_slang 저장소 초기화: db_path=%s", self.db_path)
         self._ensure_table()
 
     def _connect(self) -> sqlite3.Connection:
@@ -47,6 +54,12 @@ class TrendSlangRepository:
 
     def save_source(self, source: TrendSlangSource) -> None:
         now = _utcnow().isoformat()
+        logger.info(
+            "trend_slang 소스 저장 시작: source_type=%s url=%s 제목=%s",
+            source.source_type,
+            source.source_url,
+            source.source_title,
+        )
         with self._connect() as connection:
             connection.execute(
                 """
@@ -104,6 +117,7 @@ class TrendSlangRepository:
 
     def get_recent_trend_slang_sources(self, hours: int = 24) -> list[dict]:
         threshold = (_utcnow() - timedelta(hours=hours)).isoformat()
+        logger.info("최근 trend_slang 소스 조회: 기준시간=%s시간 threshold=%s", hours, threshold)
         with self._connect() as connection:
             rows = connection.execute(
                 """
@@ -114,11 +128,13 @@ class TrendSlangRepository:
                 """,
                 (threshold,),
             ).fetchall()
-        return [self._row_to_dict(row) for row in rows]
+        results = [self._row_to_dict(row) for row in rows]
+        logger.info("최근 trend_slang 소스 조회 완료: 개수=%s", len(results))
+        return results
 
     def get_recent_trend_context_for_writer(self, hours: int = 24) -> dict:
         rows = self.get_recent_trend_slang_sources(hours=hours)
-        return {
+        context = {
             "keywords": self._merge_unique(rows, "keywords"),
             "slang_expressions": self._merge_unique(rows, "slang_expressions"),
             "hook_patterns": self._merge_unique(rows, "hook_patterns"),
@@ -126,8 +142,21 @@ class TrendSlangRepository:
             "cta_patterns": self._merge_unique(rows, "cta_patterns"),
             "tone_features": self._merge_unique(rows, "tone_features"),
             "avoid_expressions": self._merge_unique(rows, "avoid_expressions"),
-            "summaries": [row["summary"] for row in rows if row["summary"]],
+            "summaries": [row["summary"] for row in rows if row["summary"]][:MAX_CONTEXT_SUMMARIES],
         }
+        logger.info(
+            "writer용 트렌드 컨텍스트 생성: 소스수=%s 키워드=%s 유행어=%s 훅=%s 작성패턴=%s CTA=%s 톤=%s 금지표현=%s 요약=%s",
+            len(rows),
+            len(context["keywords"]),
+            len(context["slang_expressions"]),
+            len(context["hook_patterns"]),
+            len(context["writing_patterns"]),
+            len(context["cta_patterns"]),
+            len(context["tone_features"]),
+            len(context["avoid_expressions"]),
+            len(context["summaries"]),
+        )
+        return context
 
     def _merge_unique(self, rows: list[dict], key: str) -> list[str]:
         merged: list[str] = []
@@ -137,6 +166,8 @@ class TrendSlangRepository:
                 if item not in seen:
                     seen.add(item)
                     merged.append(item)
+                if len(merged) >= MAX_CONTEXT_ITEMS:
+                    return merged
         return merged
 
     def _row_to_dict(self, row: sqlite3.Row) -> dict:

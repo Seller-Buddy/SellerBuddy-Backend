@@ -16,17 +16,13 @@ SEARCH_TARGETS = [
 
 EXCLUDED_DOMAINS = {
     "youtube.com",
-    "www.youtube.com",
-    "m.youtube.com",
     "youtu.be",
     "instagram.com",
-    "www.instagram.com",
     "facebook.com",
-    "www.facebook.com",
     "x.com",
     "twitter.com",
     "tistory.com",
-    "www.tistory.com",
+    "threads.com",
 }
 
 EXCLUDED_URL_KEYWORDS = [
@@ -51,23 +47,48 @@ def search_trend_slang_urls() -> list[dict]:
     seen_urls: set[str] = set()
 
     for source_type, query in SEARCH_TARGETS:
-        logger.info("Searching Serper for source_type=%s query=%s", source_type, query)
-        response = requests.post(
-            SERPER_SEARCH_URL,
-            headers=headers,
-            json={"q": query, "gl": "kr", "hl": "ko", "num": 5},
-            timeout=30,
-        )
+        logger.info("Serper 검색 시작: source_type=%s 검색어=%s", source_type, query)
+        try:
+            response = requests.post(
+                SERPER_SEARCH_URL,
+                headers=headers,
+                json={"q": query, "gl": "kr", "hl": "ko", "num": 10},
+                timeout=30,
+            )
+        except requests.RequestException as e:
+            logger.exception("Serper 요청 실패: source_type=%s 검색어=%s 오류=%s", source_type, query, e)
+            raise RuntimeError(f"Serper 요청 실패 ({source_type}): {e}") from e
 
         if not response.ok:
+            logger.error(
+                "Serper 검색 실패: source_type=%s 상태코드=%s 응답=%s",
+                source_type,
+                response.status_code,
+                response.text,
+            )
             raise RuntimeError(
                 f"Serper 검색 실패 ({source_type}): {response.status_code} {response.text}"
             )
 
         organic_results = response.json().get("organic", [])
-        for item in organic_results[:5]:
+        logger.info(
+            "Serper 검색 결과 수신: organic_count=%s source_type=%s",
+            len(organic_results),
+            source_type,
+        )
+        accepted_count = 0
+        for item in organic_results:
+            if accepted_count >= 5:
+                break
             url = item.get("link")
-            if not url or url in seen_urls or should_skip_url(url):
+            if not url:
+                logger.warning("Serper 결과에 URL 없음: source_type=%s item=%s", source_type, item)
+                continue
+            if url in seen_urls:
+                logger.info("trend_slang 중복 URL 제외: url=%s", url)
+                continue
+            if should_skip_url(url):
+                logger.warning("trend_slang 필터링 URL 제외: url=%s source_type=%s", url, source_type)
                 continue
             seen_urls.add(url)
             collected.append(
@@ -77,15 +98,17 @@ def search_trend_slang_urls() -> list[dict]:
                     "source_title": item.get("title"),
                 }
             )
+            accepted_count += 1
 
+    logger.info("trend_slang 후보 URL 수집 완료: 후보수=%s", len(collected))
     return collected
 
 
 def should_skip_url(url: str) -> bool:
     parsed = urlparse(url)
-    domain = parsed.netloc.lower()
+    domain = parsed.netloc.lower().removeprefix("www.")
 
-    if domain in EXCLUDED_DOMAINS:
+    if any(domain == excluded or domain.endswith(f".{excluded}") for excluded in EXCLUDED_DOMAINS):
         return True
 
     lowered_url = url.lower()

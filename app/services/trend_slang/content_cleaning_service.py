@@ -1,5 +1,8 @@
 import html
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 
 TAG_BLOCK_PATTERNS = [
@@ -27,6 +30,7 @@ NOISE_PATTERNS = [
 
 def clean_html_content(raw_html: str) -> str:
     text = raw_html or ""
+    raw_length = len(text)
     text = re.sub(r"<!--.*?-->", " ", text, flags=re.DOTALL)
 
     for pattern in TAG_BLOCK_PATTERNS:
@@ -49,7 +53,16 @@ def clean_html_content(raw_html: str) -> str:
         seen.add(line)
         filtered.append(line)
 
-    return "\n".join(filtered[:120])
+    cleaned_text = "\n".join(filtered[:120])
+    debug_excerpt = cleaned_text[:200].replace("\n", " | ")
+    logger.info(
+        "trend_slang 본문 정제 완료: 원본길이=%s 남은줄수=%s 정제길이=%s 미리보기=%s",
+        raw_length,
+        len(filtered),
+        len(cleaned_text),
+        debug_excerpt,
+    )
+    return cleaned_text
 
 
 def normalize_line(line: str) -> str:

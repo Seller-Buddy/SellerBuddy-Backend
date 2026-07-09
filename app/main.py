@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.logging_config import configure_logging
 from app.routers.threads_router import router as threads_router
+
+configure_logging()
 
 app = FastAPI(title="ShopBuddyBack API")
 

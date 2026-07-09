@@ -18,9 +18,14 @@ MIN_EXTRACTED_SIGNALS = 3
 def collect_trend_slang_data(force_refresh: bool = False) -> dict:
     repository = TrendSlangRepository()
     recent_sources = repository.get_recent_trend_slang_sources(hours=RECENT_HOURS)
+    logger.info(
+        "trend_slang 수집 시작: 강제새로고침=%s 최근소스수=%s",
+        force_refresh,
+        len(recent_sources),
+    )
 
     if not force_refresh and _is_recent_cache_sufficient(recent_sources):
-        logger.info("Using cached trend/slang sources count=%s", len(recent_sources))
+        logger.info("trend_slang 캐시 사용: 최근소스수=%s", len(recent_sources))
         return {
             "cached": True,
             "total_urls": len(recent_sources),
@@ -29,16 +34,25 @@ def collect_trend_slang_data(force_refresh: bool = False) -> dict:
         }
 
     search_results = search_trend_slang_urls()
+    logger.info("trend_slang 검색 결과 처리 시작: 후보 URL 수=%s", len(search_results))
     collected_count = 0
     failed_count = 0
 
     for item in search_results:
         url = item["source_url"]
+        logger.info(
+            "trend_slang URL 처리 시작: url=%s source_type=%s 제목=%s",
+            url,
+            item["source_type"],
+            item.get("source_title"),
+        )
         try:
             scraped = scrape_url_content(url)
             cleaned_content = clean_html_content(scraped["raw_content"])
             if not cleaned_content:
-                raise ValueError("정제된 본문이 비어 있습니다.")
+                raise ValueError(
+                    f"정제된 본문이 비어 있습니다. raw_length={len(scraped['raw_content'])}"
+                )
 
             extracted = extract_trend_data(
                 source_type=item["source_type"],
@@ -46,7 +60,16 @@ def collect_trend_slang_data(force_refresh: bool = False) -> dict:
                 cleaned_content=cleaned_content,
             )
             if not has_meaningful_trend_data(extracted):
-                raise ValueError("홍보 게시글 작성에 활용할 만한 추출 결과가 부족합니다.")
+                raise ValueError(
+                    "홍보 게시글 작성에 활용할 만한 추출 결과가 부족합니다. "
+                    f"keywords={len(extracted['keywords'])} "
+                    f"slang={len(extracted['slang_expressions'])} "
+                    f"hooks={len(extracted['hook_patterns'])} "
+                    f"writing={len(extracted['writing_patterns'])} "
+                    f"cta={len(extracted['cta_patterns'])} "
+                    f"tone={len(extracted['tone_features'])} "
+                    f"summary_len={len(extracted['summary'])}"
+                )
 
             repository.save_source(
                 TrendSlangSource(
@@ -66,10 +89,28 @@ def collect_trend_slang_data(force_refresh: bool = False) -> dict:
                 )
             )
             collected_count += 1
+            logger.info(
+                "trend_slang 저장 성공: url=%s source_type=%s 누적성공수=%s",
+                url,
+                item["source_type"],
+                collected_count,
+            )
         except Exception as e:
             failed_count += 1
-            logger.exception("Failed to process trend/slang url=%s error=%s", url, e)
+            logger.exception(
+                "trend_slang URL 처리 실패: url=%s source_type=%s 제목=%s 오류=%s",
+                url,
+                item["source_type"],
+                item.get("source_title"),
+                e,
+            )
 
+    logger.info(
+        "trend_slang 수집 종료: 전체URL=%s 성공=%s 실패=%s",
+        len(search_results),
+        collected_count,
+        failed_count,
+    )
     return {
         "cached": False,
         "total_urls": len(search_results),
@@ -84,7 +125,7 @@ def prepare_trend_context_for_writer(force_refresh: bool = False) -> dict:
     try:
         collect_trend_slang_data(force_refresh=force_refresh)
     except Exception as e:
-        logger.exception("trend_slang collection failed before writer flow: %s", e)
+        logger.exception("writer 실행 전 trend_slang 준비 실패: 오류=%s", e)
 
     return repository.get_recent_trend_context_for_writer(hours=RECENT_HOURS)
 

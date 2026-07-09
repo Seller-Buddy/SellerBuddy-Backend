@@ -1,10 +1,12 @@
 import json
+import logging
 import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 client = OpenAI(
     api_key=os.getenv("UPSTAGE_API_KEY"),
@@ -13,6 +15,10 @@ client = OpenAI(
 
 
 def call_llm(prompt: str) -> str:
+    if not os.getenv("UPSTAGE_API_KEY"):
+        raise ValueError("UPSTAGE_API_KEY가 설정되어 있지 않습니다.")
+
+    logger.info("LLM 호출 시작: model=solar-pro2 프롬프트길이=%s", len(prompt))
     response = client.chat.completions.create(
         model="solar-pro2",
         messages=[
@@ -24,7 +30,9 @@ def call_llm(prompt: str) -> str:
         temperature=0.3,
     )
 
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+    logger.info("LLM 응답 수신: 응답길이=%s", len(content or ""))
+    return content
 
 
 def parse_llm_json(raw_response: str) -> dict:
@@ -44,6 +52,7 @@ def parse_llm_json(raw_response: str) -> dict:
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError as e:
+        logger.exception("LLM JSON 파싱 실패: 응답길이=%s", len(content))
         raise ValueError("LLM 응답을 JSON으로 해석할 수 없습니다.") from e
 
     if not isinstance(parsed, dict):

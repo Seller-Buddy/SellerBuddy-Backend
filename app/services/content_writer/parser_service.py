@@ -1,8 +1,11 @@
 import json
+import logging
 import re
 
 from app.core.llm_service import call_llm
 from app.prompts.content_writer_prompts import build_product_normalization_prompt
+
+logger = logging.getLogger(__name__)
 
 
 def extract_json_text(response: str) -> str:
@@ -58,6 +61,7 @@ def normalize_features(value) -> list[str]:
 
 def normalize_product(raw: dict, index: int) -> dict:
     fallback_product_id = f"p{index + 1:03d}"
+    logger.info("상품 정규화 시작: index=%s 기본product_id=%s 원본키=%s", index, fallback_product_id, list(raw.keys()))
     prompt = build_product_normalization_prompt(raw, fallback_product_id)
     response = call_llm(prompt)
     json_text = extract_json_text(response)
@@ -92,6 +96,13 @@ def normalize_product(raw: dict, index: int) -> dict:
     normalized["pain_point"] = str(normalized["pain_point"]).strip() if normalized["pain_point"] else None
     normalized["product_url"] = str(normalized["product_url"]).strip() if normalized["product_url"] else None
 
+    logger.info(
+        "상품 정규화 완료: product_id=%s 상품명=%s 특징수=%s 가격존재=%s",
+        normalized["product_id"],
+        normalized["product_name"],
+        len(normalized["features"]),
+        normalized["price"] is not None,
+    )
     return normalized
 
 

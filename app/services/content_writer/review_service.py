@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def review_post(post: dict) -> dict:
     content = str(post.get("content", ""))
     issues = []
@@ -15,6 +20,8 @@ def review_post(post: dict) -> dict:
             issues.append(f"위험/과장 표현 포함: {phrase}")
 
     if issues:
+        logger.warning("게시글 검수 실패: 이슈=%s 글자수=%s", issues, len(content))
         raise ValueError(", ".join(issues))
 
+    logger.info("게시글 검수 통과: 글자수=%s", len(content))
     return {"content": content}

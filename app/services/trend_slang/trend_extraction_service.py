@@ -1,5 +1,9 @@
+import logging
+
 from app.core.llm_service import call_llm, parse_llm_json
 from app.prompts.trend_slang_prompts import build_trend_extraction_prompt
+
+logger = logging.getLogger(__name__)
 
 
 TREND_ARRAY_KEYS = [
@@ -14,6 +18,12 @@ TREND_ARRAY_KEYS = [
 
 
 def extract_trend_data(source_type: str, title: str | None, cleaned_content: str) -> dict:
+    logger.info(
+        "trend_slang LLM 추출 시작: source_type=%s 제목=%s 정제본문길이=%s",
+        source_type,
+        title or "",
+        len(cleaned_content),
+    )
     result = call_llm(build_trend_extraction_prompt(source_type, title, cleaned_content))
     parsed = parse_llm_json(result)
 
@@ -22,6 +32,17 @@ def extract_trend_data(source_type: str, title: str | None, cleaned_content: str
         for key in TREND_ARRAY_KEYS
     }
     normalized["summary"] = normalize_summary(str(parsed.get("summary") or "").strip())
+    logger.info(
+        "trend_slang LLM 추출 완료: 키워드=%s 유행어=%s 훅=%s 작성패턴=%s CTA=%s 톤=%s 금지표현=%s 요약길이=%s",
+        len(normalized["keywords"]),
+        len(normalized["slang_expressions"]),
+        len(normalized["hook_patterns"]),
+        len(normalized["writing_patterns"]),
+        len(normalized["cta_patterns"]),
+        len(normalized["tone_features"]),
+        len(normalized["avoid_expressions"]),
+        len(normalized["summary"]),
+    )
     return normalized
 
 
