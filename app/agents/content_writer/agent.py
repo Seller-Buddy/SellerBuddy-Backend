@@ -13,15 +13,13 @@ def generate_threads_posts(raw_products: list[dict]) -> list[dict]:
     logger.info("content_writer 시작: 원본 상품 수=%s", len(raw_products))
     trend_context = prepare_trend_context_for_writer()
     logger.info(
-        "트렌드 컨텍스트 준비 완료: 키워드=%s 유행어=%s 훅=%s 작성패턴=%s CTA=%s 톤=%s 금지표현=%s 요약=%s",
+        "트렌드 컨텍스트 준비 완료: 키워드=%s 유행어=%s 훅=%s 작성패턴=%s CTA=%s 톤=%s",
         len(trend_context.get("keywords", [])),
         len(trend_context.get("slang_expressions", [])),
         len(trend_context.get("hook_patterns", [])),
         len(trend_context.get("writing_patterns", [])),
         len(trend_context.get("cta_patterns", [])),
         len(trend_context.get("tone_features", [])),
-        len(trend_context.get("avoid_expressions", [])),
-        len(trend_context.get("summaries", [])),
     )
     normalized_products = normalize_products(raw_products)
     logger.info("상품 정규화 완료: 상품 수=%s", len(normalized_products))

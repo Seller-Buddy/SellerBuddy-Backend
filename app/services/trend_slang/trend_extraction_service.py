@@ -13,16 +13,16 @@ TREND_ARRAY_KEYS = [
     "writing_patterns",
     "cta_patterns",
     "tone_features",
-    "avoid_expressions",
 ]
+
+MAX_ITEM_LENGTH = 18
+MAX_ITEMS_PER_KEY = 5
 
 
 def extract_trend_data(source_type: str, title: str | None, cleaned_content: str) -> dict:
     logger.info(
-        "trend_slang LLM 추출 시작: source_type=%s 제목=%s 정제본문길이=%s",
+        "trend_slang LLM 추출 시작: source_type=%s",
         source_type,
-        title or "",
-        len(cleaned_content),
     )
     result = call_llm(build_trend_extraction_prompt(source_type, title, cleaned_content))
     parsed = parse_llm_json(result)
@@ -31,17 +31,15 @@ def extract_trend_data(source_type: str, title: str | None, cleaned_content: str
         key: filter_items(key, normalize_str_list(parsed.get(key)))
         for key in TREND_ARRAY_KEYS
     }
-    normalized["summary"] = normalize_summary(str(parsed.get("summary") or "").strip())
     logger.info(
-        "trend_slang LLM 추출 완료: 키워드=%s 유행어=%s 훅=%s 작성패턴=%s CTA=%s 톤=%s 금지표현=%s 요약길이=%s",
+        "trend_slang 핵심 추출 완료: source_type=%s 키워드=%s 유행어=%s 훅=%s 작성패턴=%s CTA=%s 톤=%s",
+        source_type,
         len(normalized["keywords"]),
         len(normalized["slang_expressions"]),
         len(normalized["hook_patterns"]),
         len(normalized["writing_patterns"]),
         len(normalized["cta_patterns"]),
         len(normalized["tone_features"]),
-        len(normalized["avoid_expressions"]),
-        len(normalized["summary"]),
     )
     return normalized
 
@@ -70,7 +68,7 @@ def filter_items(key: str, items: list[str]) -> list[str]:
         seen.add(normalized)
         filtered.append(normalized)
 
-    return filtered[:8]
+    return filtered[:MAX_ITEMS_PER_KEY]
 
 
 def should_drop_item(key: str, item: str) -> bool:
@@ -93,19 +91,10 @@ def should_drop_item(key: str, item: str) -> bool:
     ]
     if any(fragment in item or fragment in lower for fragment in banned_fragments):
         return True
-    if len(item) > 60:
+    if len(item) > MAX_ITEM_LENGTH:
         return True
-    if key in {"hook_patterns", "cta_patterns", "slang_expressions"} and len(item) > 35:
+    if key in {"hook_patterns", "cta_patterns", "slang_expressions"} and len(item) > MAX_ITEM_LENGTH:
         return True
-    if key == "slang_expressions" and " " in item and len(item.split()) > 6:
+    if key == "slang_expressions" and " " in item:
         return True
     return False
-
-
-def normalize_summary(summary: str) -> str:
-    if not summary:
-        return ""
-    cleaned = " ".join(summary.split())
-    if len(cleaned) > 220:
-        cleaned = cleaned[:217].rstrip() + "..."
-    return cleaned

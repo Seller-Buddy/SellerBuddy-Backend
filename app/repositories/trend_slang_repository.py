@@ -9,7 +9,25 @@ from app.models.trend_slang import TrendSlangSource
 logger = logging.getLogger(__name__)
 
 MAX_CONTEXT_ITEMS = 20
-MAX_CONTEXT_SUMMARIES = 8
+MAX_CONTEXT_TEXT_LENGTH = 80
+
+TABLE_NAME = "trend_slang_sources"
+TARGET_COLUMNS = [
+    "id",
+    "source_type",
+    "source_url",
+    "source_title",
+    "raw_content",
+    "cleaned_content",
+    "keywords",
+    "slang_expressions",
+    "hook_patterns",
+    "writing_patterns",
+    "cta_patterns",
+    "tone_features",
+    "created_at",
+    "updated_at",
+]
 
 
 def _utcnow() -> datetime:
@@ -29,28 +47,63 @@ class TrendSlangRepository:
 
     def _ensure_table(self) -> None:
         with self._connect() as connection:
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS trend_slang_sources (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    source_type TEXT NOT NULL,
-                    source_url TEXT NOT NULL UNIQUE,
-                    source_title TEXT,
-                    raw_content TEXT NOT NULL,
-                    cleaned_content TEXT NOT NULL,
-                    keywords TEXT NOT NULL,
-                    slang_expressions TEXT NOT NULL,
-                    hook_patterns TEXT NOT NULL,
-                    writing_patterns TEXT NOT NULL,
-                    cta_patterns TEXT NOT NULL,
-                    tone_features TEXT NOT NULL,
-                    avoid_expressions TEXT NOT NULL,
-                    summary TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
+            existing_columns = self._get_existing_columns(connection)
+            if not existing_columns:
+                connection.execute(self._create_table_sql(TABLE_NAME))
+                return
+
+            if existing_columns != TARGET_COLUMNS:
+                logger.info(
+                    "trend_slang 테이블 스키마 정리 시작: 기존컬럼=%s 대상컬럼=%s",
+                    existing_columns,
+                    TARGET_COLUMNS,
                 )
-                """
-            )
+                self._migrate_table(connection, existing_columns)
+
+    def _get_existing_columns(self, connection: sqlite3.Connection) -> list[str]:
+        rows = connection.execute(f"PRAGMA table_info({TABLE_NAME})").fetchall()
+        return [row["name"] for row in rows]
+
+    def _create_table_sql(self, table_name: str) -> str:
+        return f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_type TEXT NOT NULL,
+            source_url TEXT NOT NULL UNIQUE,
+            source_title TEXT,
+            raw_content TEXT NOT NULL,
+            cleaned_content TEXT NOT NULL,
+            keywords TEXT NOT NULL,
+            slang_expressions TEXT NOT NULL,
+            hook_patterns TEXT NOT NULL,
+            writing_patterns TEXT NOT NULL,
+            cta_patterns TEXT NOT NULL,
+            tone_features TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+
+    def _migrate_table(
+        self,
+        connection: sqlite3.Connection,
+        existing_columns: list[str],
+    ) -> None:
+        temp_table = f"{TABLE_NAME}_new"
+        connection.execute(self._create_table_sql(temp_table))
+
+        common_columns = [column for column in TARGET_COLUMNS if column in existing_columns]
+        column_csv = ", ".join(common_columns)
+        connection.execute(
+            f"""
+            INSERT INTO {temp_table} ({column_csv})
+            SELECT {column_csv}
+            FROM {TABLE_NAME}
+            """
+        )
+        connection.execute(f"DROP TABLE {TABLE_NAME}")
+        connection.execute(f"ALTER TABLE {temp_table} RENAME TO {TABLE_NAME}")
+        logger.info("trend_slang 테이블 스키마 정리 완료")
 
     def save_source(self, source: TrendSlangSource) -> None:
         now = _utcnow().isoformat()
@@ -75,12 +128,10 @@ class TrendSlangRepository:
                     writing_patterns,
                     cta_patterns,
                     tone_features,
-                    avoid_expressions,
-                    summary,
                     created_at,
                     updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(source_url) DO UPDATE SET
                     source_type=excluded.source_type,
                     source_title=excluded.source_title,
@@ -92,8 +143,6 @@ class TrendSlangRepository:
                     writing_patterns=excluded.writing_patterns,
                     cta_patterns=excluded.cta_patterns,
                     tone_features=excluded.tone_features,
-                    avoid_expressions=excluded.avoid_expressions,
-                    summary=excluded.summary,
                     updated_at=excluded.updated_at
                 """,
                 (
@@ -108,8 +157,6 @@ class TrendSlangRepository:
                     json.dumps(source.writing_patterns, ensure_ascii=False),
                     json.dumps(source.cta_patterns, ensure_ascii=False),
                     json.dumps(source.tone_features, ensure_ascii=False),
-                    json.dumps(source.avoid_expressions, ensure_ascii=False),
-                    source.summary,
                     now,
                     now,
                 ),
@@ -134,18 +181,20 @@ class TrendSlangRepository:
 
     def get_recent_trend_context_for_writer(self, hours: int = 24) -> dict:
         rows = self.get_recent_trend_slang_sources(hours=hours)
+
+        def shorten_list(items: list[str]) -> list[str]:
+            return [self._shorten(item) for item in items]
+
         context = {
-            "keywords": self._merge_unique(rows, "keywords"),
-            "slang_expressions": self._merge_unique(rows, "slang_expressions"),
-            "hook_patterns": self._merge_unique(rows, "hook_patterns"),
-            "writing_patterns": self._merge_unique(rows, "writing_patterns"),
-            "cta_patterns": self._merge_unique(rows, "cta_patterns"),
-            "tone_features": self._merge_unique(rows, "tone_features"),
-            "avoid_expressions": self._merge_unique(rows, "avoid_expressions"),
-            "summaries": [row["summary"] for row in rows if row["summary"]][:MAX_CONTEXT_SUMMARIES],
+            "keywords": shorten_list(self._merge_unique(rows, "keywords")),
+            "slang_expressions": shorten_list(self._merge_unique(rows, "slang_expressions")),
+            "hook_patterns": shorten_list(self._merge_unique(rows, "hook_patterns")),
+            "writing_patterns": shorten_list(self._merge_unique(rows, "writing_patterns")),
+            "cta_patterns": shorten_list(self._merge_unique(rows, "cta_patterns")),
+            "tone_features": shorten_list(self._merge_unique(rows, "tone_features")),
         }
         logger.info(
-            "writer용 트렌드 컨텍스트 생성: 소스수=%s 키워드=%s 유행어=%s 훅=%s 작성패턴=%s CTA=%s 톤=%s 금지표현=%s 요약=%s",
+            "writer용 트렌드 컨텍스트 생성: 소스수=%s 키워드=%s 유행어=%s 훅=%s 작성패턴=%s CTA=%s 톤=%s",
             len(rows),
             len(context["keywords"]),
             len(context["slang_expressions"]),
@@ -153,8 +202,6 @@ class TrendSlangRepository:
             len(context["writing_patterns"]),
             len(context["cta_patterns"]),
             len(context["tone_features"]),
-            len(context["avoid_expressions"]),
-            len(context["summaries"]),
         )
         return context
 
@@ -183,8 +230,12 @@ class TrendSlangRepository:
             "writing_patterns": json.loads(row["writing_patterns"]),
             "cta_patterns": json.loads(row["cta_patterns"]),
             "tone_features": json.loads(row["tone_features"]),
-            "avoid_expressions": json.loads(row["avoid_expressions"]),
-            "summary": row["summary"],
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
         }
+
+    def _shorten(self, value: str) -> str:
+        cleaned = " ".join((value or "").split())
+        if len(cleaned) > MAX_CONTEXT_TEXT_LENGTH:
+            return cleaned[: MAX_CONTEXT_TEXT_LENGTH - 3].rstrip() + "..."
+        return cleaned

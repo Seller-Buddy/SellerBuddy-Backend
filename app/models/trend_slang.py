@@ -15,7 +15,5 @@ class TrendSlangSource:
     writing_patterns: list[str]
     cta_patterns: list[str]
     tone_features: list[str]
-    avoid_expressions: list[str]
-    summary: str
     created_at: datetime | None = None
     updated_at: datetime | None = None

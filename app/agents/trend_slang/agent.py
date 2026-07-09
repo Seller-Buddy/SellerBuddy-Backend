@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 RECENT_HOURS = 24
 MIN_RECENT_SOURCES = 10
-MIN_EXTRACTED_SIGNALS = 3
 
 
 def collect_trend_slang_data(force_refresh: bool = False) -> dict:
@@ -34,18 +33,11 @@ def collect_trend_slang_data(force_refresh: bool = False) -> dict:
         }
 
     search_results = search_trend_slang_urls()
-    logger.info("trend_slang 검색 결과 처리 시작: 후보 URL 수=%s", len(search_results))
     collected_count = 0
     failed_count = 0
 
     for item in search_results:
         url = item["source_url"]
-        logger.info(
-            "trend_slang URL 처리 시작: url=%s source_type=%s 제목=%s",
-            url,
-            item["source_type"],
-            item.get("source_title"),
-        )
         try:
             scraped = scrape_url_content(url)
             cleaned_content = clean_html_content(scraped["raw_content"])
@@ -67,8 +59,7 @@ def collect_trend_slang_data(force_refresh: bool = False) -> dict:
                     f"hooks={len(extracted['hook_patterns'])} "
                     f"writing={len(extracted['writing_patterns'])} "
                     f"cta={len(extracted['cta_patterns'])} "
-                    f"tone={len(extracted['tone_features'])} "
-                    f"summary_len={len(extracted['summary'])}"
+                    f"tone={len(extracted['tone_features'])}"
                 )
 
             repository.save_source(
@@ -84,16 +75,22 @@ def collect_trend_slang_data(force_refresh: bool = False) -> dict:
                     writing_patterns=extracted["writing_patterns"],
                     cta_patterns=extracted["cta_patterns"],
                     tone_features=extracted["tone_features"],
-                    avoid_expressions=extracted["avoid_expressions"],
-                    summary=extracted["summary"],
                 )
             )
             collected_count += 1
             logger.info(
-                "trend_slang 저장 성공: url=%s source_type=%s 누적성공수=%s",
-                url,
+                "trend_slang DB 저장 완료: source_type=%s 제목=%s 주소=%s 저장값=%s",
                 item["source_type"],
-                collected_count,
+                item.get("source_title") or scraped.get("title") or "",
+                url,
+                {
+                    "keywords": extracted["keywords"],
+                    "slang_expressions": extracted["slang_expressions"],
+                    "hook_patterns": extracted["hook_patterns"],
+                    "writing_patterns": extracted["writing_patterns"],
+                    "cta_patterns": extracted["cta_patterns"],
+                    "tone_features": extracted["tone_features"],
+                },
             )
         except Exception as e:
             failed_count += 1
@@ -105,12 +102,6 @@ def collect_trend_slang_data(force_refresh: bool = False) -> dict:
                 e,
             )
 
-    logger.info(
-        "trend_slang 수집 종료: 전체URL=%s 성공=%s 실패=%s",
-        len(search_results),
-        collected_count,
-        failed_count,
-    )
     return {
         "cached": False,
         "total_urls": len(search_results),
@@ -140,16 +131,4 @@ def _is_recent_cache_sufficient(sources: list[dict]) -> bool:
 
 
 def has_meaningful_trend_data(extracted: dict) -> bool:
-    signal_count = 0
-    for key in (
-        "keywords",
-        "slang_expressions",
-        "hook_patterns",
-        "writing_patterns",
-        "cta_patterns",
-        "tone_features",
-    ):
-        if extracted.get(key):
-            signal_count += 1
-
-    return signal_count >= MIN_EXTRACTED_SIGNALS and bool(extracted.get("summary"))
+    return bool(extracted.get("keywords") or extracted.get("slang_expressions"))

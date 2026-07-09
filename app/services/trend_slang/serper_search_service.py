@@ -47,7 +47,6 @@ def search_trend_slang_urls() -> list[dict]:
     seen_urls: set[str] = set()
 
     for source_type, query in SEARCH_TARGETS:
-        logger.info("Serper 검색 시작: source_type=%s 검색어=%s", source_type, query)
         try:
             response = requests.post(
                 SERPER_SEARCH_URL,
@@ -56,7 +55,7 @@ def search_trend_slang_urls() -> list[dict]:
                 timeout=30,
             )
         except requests.RequestException as e:
-            logger.exception("Serper 요청 실패: source_type=%s 검색어=%s 오류=%s", source_type, query, e)
+            logger.exception("Serper 요청 실패: source_type=%s 오류=%s", source_type, e)
             raise RuntimeError(f"Serper 요청 실패 ({source_type}): {e}") from e
 
         if not response.ok:
@@ -71,24 +70,17 @@ def search_trend_slang_urls() -> list[dict]:
             )
 
         organic_results = response.json().get("organic", [])
-        logger.info(
-            "Serper 검색 결과 수신: organic_count=%s source_type=%s",
-            len(organic_results),
-            source_type,
-        )
         accepted_count = 0
         for item in organic_results:
             if accepted_count >= 5:
                 break
             url = item.get("link")
             if not url:
-                logger.warning("Serper 결과에 URL 없음: source_type=%s item=%s", source_type, item)
+                logger.warning("Serper 결과에 URL 없음: source_type=%s", source_type)
                 continue
             if url in seen_urls:
-                logger.info("trend_slang 중복 URL 제외: url=%s", url)
                 continue
             if should_skip_url(url):
-                logger.warning("trend_slang 필터링 URL 제외: url=%s source_type=%s", url, source_type)
                 continue
             seen_urls.add(url)
             collected.append(
@@ -98,9 +90,12 @@ def search_trend_slang_urls() -> list[dict]:
                     "source_title": item.get("title"),
                 }
             )
+            logger.info(
+                "찾은 사이트: 이름=%s 주소=%s",
+                item.get("title") or "",
+                url,
+            )
             accepted_count += 1
-
-    logger.info("trend_slang 후보 URL 수집 완료: 후보수=%s", len(collected))
     return collected
 
 

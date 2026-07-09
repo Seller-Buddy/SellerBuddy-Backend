@@ -71,6 +71,7 @@ def build_thread_post_prompt(product: dict, insight: dict, trend_context: dict |
 
 아래 상품 정보와 인사이트를 바탕으로 Threads 게시글 1개를 작성해.
 글을 보는 사람의 구미를 당길 수 있도록 위에 첨부한 트렌드/유행어 참고 정보를 적용해.
+반드시 `slang_expressions`에서 유행어 또는 신조어 1개 이상을 자연스럽게 포함해.
 반드시 JSON만 반환해. 설명 문장, 마크다운, 코드블록은 쓰지 마.
 
 조건:
@@ -80,8 +81,8 @@ def build_thread_post_prompt(product: dict, insight: dict, trend_context: dict |
 - 상품 정보에 없는 기능은 지어내지 말 것
 - 과장 표현 금지
 - 사용자가 게시 승인 여부를 판단할 수 있도록 완성된 게시글 형태로 작성
-- 최근 트렌드/유행어 참고 정보가 있으면 어색하지 않은 범위에서만 반영할 것
-- avoid_expressions 항목은 피할 것
+- 최근 트렌드/유행어 참고 정보 중 최소 1개의 유행어 또는 신조어를 포함할 것
+- 유행어는 문장 끝 장식이 아니라 문맥에 자연스럽게 녹일 것
 
 상품 정보:
 {json.dumps(product, ensure_ascii=False)}
