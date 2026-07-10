@@ -1,14 +1,8 @@
-import logging
 import re
 from datetime import date, datetime
 
-from app.core.llm_service import call_llm, parse_llm_json
-from app.prompts.cs_prompts import build_decision_prompt
 from app.services.cs.context_utils import get_context_value, infer_bool, text_has_any
 from app.services.cs.missing_info_checker import FIELD_ALIASES
-
-
-logger = logging.getLogger(__name__)
 
 DECISION_LABELS = {
     "likely_possible": "가능성 높음",
@@ -35,26 +29,7 @@ def decide_cs_case(
     missing_info: list[str],
     matched_policies: list[dict],
 ) -> dict:
-    fallback = decide_by_rules(category, customer_message, order_context, missing_info, matched_policies)
-
-    try:
-        parsed = parse_llm_json(
-            call_llm(build_decision_prompt(category, customer_message, order_context, missing_info, matched_policies))
-        )
-        decision = normalize_decision(parsed.get("decision"))
-        return {
-            "decision": decision,
-            "decision_label": DECISION_LABELS[decision],
-            "decision_reason": str(parsed.get("decision_reason") or fallback["decision_reason"]).strip(),
-        }
-    except Exception as e:
-        logger.warning("CS 판단 LLM 실패, 규칙 기반으로 대체: %s", e)
-        return fallback
-
-
-def normalize_decision(value) -> str:
-    decision = str(value or "").strip().lower()
-    return decision if decision in DECISION_LABELS else "needs_confirmation"
+    return decide_by_rules(category, customer_message, order_context, missing_info, matched_policies)
 
 
 def decide_by_rules(
@@ -113,8 +88,17 @@ def decide_by_rules(
             if text_has_any(policy_text, ["미사용", "unused"]) and text_has_any(policy_text, ["택", "tag"]):
                 return build_decision("likely_possible", "정책 근거상 미사용, 택 유지 조건을 충족할 가능성이 높습니다.")
 
-    if category == "cancellation" and text_has_any(policy_text, ["출고 전", "배송 전", "취소 가능"]):
-        return build_decision("likely_possible", "정책에 출고 전 또는 배송 전 취소 가능 기준이 있습니다.")
+    if category == "cancellation":
+        order_status = get_context_value(order_context, FIELD_ALIASES["order_status"])
+        status_text = f"{order_status or ''} {customer_message}"
+        if text_has_any(status_text, ["출고 전", "배송 전", "배송 시작 전", "미출고"]):
+            return build_decision("likely_possible", "출고 전 또는 배송 시작 전 상태로 취소 가능성이 높습니다.")
+        if text_has_any(
+            status_text,
+            ["출고 후", "출고됐", "출고 완료", "배송 중", "배송중", "배송 시작", "발송 완료", "발송됐"],
+        ):
+            return build_decision("unlikely", "이미 출고되었거나 배송이 시작되어 주문 취소 가능성이 낮습니다.")
+        return build_decision("needs_confirmation", "주문 취소 가능 여부를 판단하려면 출고 또는 배송 시작 여부 확인이 필요합니다.")
 
     if category == "shipping":
         return build_decision("needs_confirmation", "배송 문의는 실제 배송 상태와 운송장 확인이 필요합니다.")

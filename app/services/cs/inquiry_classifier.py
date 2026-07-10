@@ -20,6 +20,15 @@ CATEGORY_LABELS = {
 
 
 def classify_inquiry(customer_message: str, order_context: dict) -> dict:
+    rule_category = classify_by_keywords(customer_message)
+    if rule_category != "other":
+        return {
+            "category": rule_category,
+            "category_label": CATEGORY_LABELS[rule_category],
+            "inquiry_summary": customer_message.strip()[:300],
+            "urgency": "high" if rule_category == "complaint" else "medium" if rule_category == "defective_item" else "low",
+        }
+
     try:
         parsed = parse_llm_json(call_llm(build_inquiry_classification_prompt(customer_message, order_context)))
         category = normalize_category(parsed.get("category"))
@@ -51,18 +60,18 @@ def normalize_urgency(value) -> str:
 
 
 def classify_by_keywords(customer_message: str) -> str:
+    if text_has_any(customer_message, ["화나요", "화가", "불만", "신고", "컴플레인", "보상", "complaint"]):
+        return "complaint"
+    if text_has_any(customer_message, ["불량", "파손", "하자", "오염", "찢어", "깨져", "고장", "defect", "broken", "damaged"]):
+        return "defective_item"
     if text_has_any(customer_message, ["환불", "반품", "돈", "결제취소", "refund", "return"]):
         return "refund"
     if text_has_any(customer_message, ["교환", "사이즈", "색상 변경", "exchange"]):
         return "exchange"
-    if text_has_any(customer_message, ["배송", "송장", "운송장", "도착", "출고", "배송지", "shipping", "delivery"]):
-        return "shipping"
     if text_has_any(customer_message, ["취소", "주문 취소", "cancel"]):
         return "cancellation"
-    if text_has_any(customer_message, ["불량", "파손", "하자", "오염", "고장", "defect", "broken", "damaged"]):
-        return "defective_item"
-    if text_has_any(customer_message, ["화나요", "불만", "신고", "컴플레인", "complaint"]):
-        return "complaint"
+    if text_has_any(customer_message, ["배송", "송장", "운송장", "도착", "출고", "배송지", "shipping", "delivery"]):
+        return "shipping"
     if text_has_any(customer_message, ["재질", "사이즈표", "색상", "무게", "성분", "문의", "question"]):
         return "product_question"
     return "other"

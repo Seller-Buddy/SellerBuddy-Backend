@@ -54,12 +54,24 @@ def search_policy_documents(
             logger.warning("ChromaDB 정책 컬렉션이 비어 있습니다.")
             return []
 
+        category_filter = build_category_filter(category)
+        available_count = count_available_policies(collection, category_filter, top_k)
+        if available_count == 0:
+            logger.info("문의 카테고리에 해당하는 정책이 없습니다: category=%s", category)
+            return []
+
         query_text = build_policy_query(category, customer_message, order_context or {})
         query_embedding = call_query_embedding([query_text])[0]
+        query_arguments = {
+            "query_embeddings": [query_embedding],
+            "n_results": available_count,
+            "include": ["documents", "metadatas", "distances"],
+        }
+        if category_filter:
+            query_arguments["where"] = category_filter
+
         results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=max(1, min(top_k, 10)),
-            include=["documents", "metadatas", "distances"],
+            **query_arguments,
         )
         return normalize_chroma_results(results)
     except Exception as e:
@@ -75,6 +87,24 @@ def build_policy_query(category: str, customer_message: str, order_context: dict
             f"주문/상품 정보: {order_context}",
         ]
     )
+
+
+def build_category_filter(category: str) -> dict | None:
+    normalized_category = compact_text(category).lower()
+    return {"category": normalized_category} if normalized_category else None
+
+
+def count_available_policies(collection, category_filter: dict | None, top_k: int) -> int:
+    requested_count = max(1, min(top_k, 10))
+    if not category_filter:
+        return min(requested_count, collection.count())
+
+    results = collection.get(
+        where=category_filter,
+        limit=requested_count,
+        include=["metadatas"],
+    )
+    return min(requested_count, len(results.get("ids") or []))
 
 
 def get_policy_collection(reset_collection: bool = False):
