@@ -53,7 +53,7 @@ def search_customer_support_policies(request: CsPolicySearchRequest):
 
     try:
         matches = search_policy_documents(
-            category=request.category or "",
+            category=request.category or "other",
             customer_message=query,
             order_context=request.order_context,
             top_k=request.top_k,

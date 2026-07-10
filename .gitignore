@@ -5,5 +5,4 @@ __pycache__
 shopbuddy.db
 chroma_db
 FRONTEND_API_GUIDE.md
-tmp/
 *.md

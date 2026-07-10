@@ -3,19 +3,7 @@ from app.services.cs.context_utils import get_context_value, infer_bool, text_ha
 
 FIELD_ALIASES = {
     "order_id": ["order_id", "orderId", "주문번호", "주문 번호"],
-    "received_at": [
-        "received_at",
-        "receivedAt",
-        "received_days_ago",
-        "receivedDaysAgo",
-        "days_since_delivery",
-        "daysSinceDelivery",
-        "수령일",
-        "배송완료일",
-        "받은날",
-        "수령후경과일",
-        "수령 후 경과일",
-    ],
+    "received_at": ["received_at", "receivedAt", "수령일", "배송완료일", "받은날"],
     "used": ["used", "사용여부", "사용 여부"],
     "tag_removed": ["tag_removed", "tagRemoved", "택제거", "택 제거"],
     "product_name": ["product_name", "productName", "상품명", "제품명"],
