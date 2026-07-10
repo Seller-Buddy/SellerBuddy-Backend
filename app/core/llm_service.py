@@ -35,6 +35,35 @@ def call_llm(prompt: str) -> str:
     return content
 
 
+def call_query_embedding(texts: list[str]) -> list[list[float]]:
+    return call_embedding(texts, model_env_key="UPSTAGE_EMBEDDING_QUERY_MODEL")
+
+
+def call_passage_embedding(texts: list[str]) -> list[list[float]]:
+    return call_embedding(texts, model_env_key="UPSTAGE_EMBEDDING_PASSAGE_MODEL")
+
+
+def call_embedding(texts: list[str], model_env_key: str) -> list[list[float]]:
+    if not texts:
+        return []
+
+    if not os.getenv("UPSTAGE_API_KEY"):
+        raise ValueError("UPSTAGE_API_KEY가 설정되어 있지 않습니다.")
+
+    model = os.getenv(model_env_key)
+    if not model:
+        raise ValueError(f"{model_env_key}이 설정되어 있지 않습니다.")
+
+    logger.info("Embedding 호출 시작: model=%s env=%s 입력수=%s", model, model_env_key, len(texts))
+    response = client.embeddings.create(
+        model=model,
+        input=texts,
+    )
+    embeddings = [item.embedding for item in response.data]
+    logger.info("Embedding 응답 수신: embedding_count=%s", len(embeddings))
+    return embeddings
+
+
 def parse_llm_json(raw_response: str) -> dict:
     if not raw_response:
         raise ValueError("LLM 응답이 비어 있습니다.")

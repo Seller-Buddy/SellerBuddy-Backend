@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.logging_config import configure_logging
+from app.routers.cs_router import router as cs_router
 from app.routers.threads_router import router as threads_router
 
 configure_logging()
@@ -22,6 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(threads_router, prefix="/api/threads", tags=["threads"])
+app.include_router(cs_router, prefix="/api/cs", tags=["cs"])
 
 
 @app.get("/")
