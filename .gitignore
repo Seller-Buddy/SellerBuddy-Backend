@@ -4,3 +4,4 @@ __pycache__
 .idea
 shopbuddy.db
 chroma_db
+FRONTEND_API_GUIDE.md
