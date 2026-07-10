@@ -1,3 +1,6 @@
+import json
+
+
 def build_trend_extraction_prompt(source_type: str, title: str | None, content: str) -> str:
     return f"""
 너는 한국어 소셜 콘텐츠 트렌드 분석 에이전트야.
@@ -25,5 +28,43 @@ def build_trend_extraction_prompt(source_type: str, title: str | None, content: 
   "writing_patterns": [],
   "cta_patterns": [],
   "tone_features": []
+}}
+"""
+
+
+def build_trend_route_decision_prompt(state_summary: dict) -> str:
+    return f"""
+너는 트렌드 수집 워크플로우의 라우터 에이전트야.
+
+현재 수집 상태를 보고 다음 작업을 판단해.
+반드시 JSON 객체만 반환해. 설명 문장, 마크다운, 코드블록은 절대 쓰지 마.
+
+허용되는 next_action:
+- search_more: 부족한 타입의 URL을 더 검색해야 함
+- crawl_candidates: 이미 확보한 후보 URL을 크롤링해야 함
+- finish: 목표를 충족했거나 제한에 도달해 종료해야 함
+
+허용되는 target_source_type:
+- slang
+- trend
+- both
+- none
+
+판단 원칙:
+- `slang`과 `trend`는 각각 5개 유효 소스 확보가 목표야.
+- 후보 URL이 있고 아직 크롤링할 수 있으면 crawl_candidates를 우선 고려해.
+- 한 타입의 유효 소스가 5개 미만이고 검색 시도 제한이 남아 있으면 search_more를 선택해.
+- 반복 제한에 도달했거나 더 진행해도 의미가 낮으면 finish를 선택해.
+- query_hint에는 다음 검색에 도움이 될 짧은 한국어 검색어를 넣어. 없으면 null로 둬.
+
+현재 상태:
+{json.dumps(state_summary, ensure_ascii=False)}
+
+반환 형식:
+{{
+  "next_action": "search_more",
+  "target_source_type": "slang",
+  "reason": "판단 이유",
+  "query_hint": "다음 검색어 또는 null"
 }}
 """

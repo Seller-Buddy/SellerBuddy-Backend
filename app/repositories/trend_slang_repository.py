@@ -179,6 +179,21 @@ class TrendSlangRepository:
         logger.info("최근 trend_slang 소스 조회 완료: 개수=%s", len(results))
         return results
 
+    def delete_sources_older_than(self, days: int) -> int:
+        threshold = (_utcnow() - timedelta(days=days)).isoformat()
+        logger.info("오래된 trend_slang 소스 정리 시작: 기준일수=%s threshold=%s", days, threshold)
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                DELETE FROM trend_slang_sources
+                WHERE updated_at < ?
+                """,
+                (threshold,),
+            )
+            deleted_count = cursor.rowcount if cursor.rowcount is not None else 0
+        logger.info("오래된 trend_slang 소스 정리 완료: 삭제수=%s", deleted_count)
+        return deleted_count
+
     def get_recent_trend_context_for_writer(self, hours: int = 24) -> dict:
         rows = self.get_recent_trend_slang_sources(hours=hours)
 

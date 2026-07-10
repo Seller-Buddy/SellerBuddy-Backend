@@ -14,6 +14,8 @@ SEARCH_TARGETS = [
     ("trend", "2026 SNS 카피라이팅 후킹 문구 CTA 작성법 짧은 콘텐츠 패턴"),
 ]
 
+DEFAULT_QUERY_BY_SOURCE_TYPE = dict(SEARCH_TARGETS)
+
 EXCLUDED_DOMAINS = {
     "youtube.com",
     "youtu.be",
@@ -34,6 +36,28 @@ EXCLUDED_URL_KEYWORDS = [
 
 
 def search_trend_slang_urls() -> list[dict]:
+    collected: list[dict] = []
+    seen_urls: set[str] = set()
+
+    for source_type, query in SEARCH_TARGETS:
+        results = search_trend_slang_urls_by_type(
+            source_type=source_type,
+            query=query,
+            seen_urls=seen_urls,
+            limit=5,
+        )
+        collected.extend(results)
+        seen_urls.update(item["source_url"] for item in results)
+
+    return collected
+
+
+def search_trend_slang_urls_by_type(
+    source_type: str,
+    query: str | None = None,
+    seen_urls: set[str] | None = None,
+    limit: int = 5,
+) -> list[dict]:
     api_key = os.getenv("SERPER_API_KEY")
     if not api_key:
         raise ValueError("SERPER_API_KEY가 설정되어 있지 않습니다.")
@@ -43,59 +67,57 @@ def search_trend_slang_urls() -> list[dict]:
         "Content-Type": "application/json",
     }
 
+    query = query or DEFAULT_QUERY_BY_SOURCE_TYPE[source_type]
+    seen_urls = seen_urls or set()
+    try:
+        response = requests.post(
+            SERPER_SEARCH_URL,
+            headers=headers,
+            json={"q": query, "gl": "kr", "hl": "ko", "num": 10},
+            timeout=30,
+        )
+    except requests.RequestException as e:
+        logger.exception("Serper 요청 실패: source_type=%s 오류=%s", source_type, e)
+        raise RuntimeError(f"Serper 요청 실패 ({source_type}): {e}") from e
+
+    if not response.ok:
+        logger.error(
+            "Serper 검색 실패: source_type=%s 상태코드=%s 응답=%s",
+            source_type,
+            response.status_code,
+            response.text,
+        )
+        raise RuntimeError(
+            f"Serper 검색 실패 ({source_type}): {response.status_code} {response.text}"
+        )
+
     collected: list[dict] = []
-    seen_urls: set[str] = set()
-
-    for source_type, query in SEARCH_TARGETS:
-        try:
-            response = requests.post(
-                SERPER_SEARCH_URL,
-                headers=headers,
-                json={"q": query, "gl": "kr", "hl": "ko", "num": 10},
-                timeout=30,
-            )
-        except requests.RequestException as e:
-            logger.exception("Serper 요청 실패: source_type=%s 오류=%s", source_type, e)
-            raise RuntimeError(f"Serper 요청 실패 ({source_type}): {e}") from e
-
-        if not response.ok:
-            logger.error(
-                "Serper 검색 실패: source_type=%s 상태코드=%s 응답=%s",
-                source_type,
-                response.status_code,
-                response.text,
-            )
-            raise RuntimeError(
-                f"Serper 검색 실패 ({source_type}): {response.status_code} {response.text}"
-            )
-
-        organic_results = response.json().get("organic", [])
-        accepted_count = 0
-        for item in organic_results:
-            if accepted_count >= 5:
-                break
-            url = item.get("link")
-            if not url:
-                logger.warning("Serper 결과에 URL 없음: source_type=%s", source_type)
-                continue
-            if url in seen_urls:
-                continue
-            if should_skip_url(url):
-                continue
-            seen_urls.add(url)
-            collected.append(
-                {
-                    "source_type": source_type,
-                    "source_url": url,
-                    "source_title": item.get("title"),
-                }
-            )
-            logger.info(
-                "찾은 사이트: 이름=%s 주소=%s",
-                item.get("title") or "",
-                url,
-            )
-            accepted_count += 1
+    organic_results = response.json().get("organic", [])
+    for item in organic_results:
+        if len(collected) >= limit:
+            break
+        url = item.get("link")
+        if not url:
+            logger.warning("Serper 결과에 URL 없음: source_type=%s", source_type)
+            continue
+        if url in seen_urls:
+            continue
+        if should_skip_url(url):
+            continue
+        seen_urls.add(url)
+        collected.append(
+            {
+                "source_type": source_type,
+                "source_url": url,
+                "source_title": item.get("title"),
+            }
+        )
+        logger.info(
+            "찾은 사이트: source_type=%s 이름=%s 주소=%s",
+            source_type,
+            item.get("title") or "",
+            url,
+        )
     return collected
 
 
