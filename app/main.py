@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,10 +12,16 @@ configure_logging()
 
 app = FastAPI(title="ShopBuddyBack API")
 
-origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-]
+
+def get_cors_origins() -> list[str]:
+    configured_origins = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://localhost:5173",
+    )
+    return [origin.strip().rstrip("/") for origin in configured_origins.split(",") if origin.strip()]
+
+
+origins = get_cors_origins()
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,3 +38,22 @@ app.include_router(cs_router, prefix="/api/cs", tags=["cs"])
 @app.get("/")
 def health_check():
     return {"status": "ok"}
+
+
+@app.get("/health/live", include_in_schema=False)
+def liveness_check():
+    return {"status": "ok"}
+
+
+@app.get("/health/ready", include_in_schema=False)
+def readiness_check():
+    paths = [
+        Path(os.getenv("APP_DB_PATH", "shopbuddy.db")),
+        Path(os.getenv("CHROMA_DB_PATH", "chroma_db")),
+    ]
+    for path in paths:
+        directory = path if path.suffix == "" else path.parent
+        directory.mkdir(parents=True, exist_ok=True)
+        if not os.access(directory, os.W_OK):
+            return {"status": "not_ready", "reason": "data_directory_not_writable"}
+    return {"status": "ready"}

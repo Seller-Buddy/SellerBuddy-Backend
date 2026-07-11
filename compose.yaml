@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: .
+    image: shopbuddy-back:${SHOPBUDDY_VERSION:-local}
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      APP_DB_PATH: /data/shopbuddy.db
+      CHROMA_DB_PATH: /data/chroma_db
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - shopbuddy_data:/data
+
+volumes:
+  shopbuddy_data:
