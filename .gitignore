@@ -2,9 +2,14 @@
 .env
 __pycache__
 .idea
+.DS_Store
 shopbuddy.db
 chroma_db
 FRONTEND_API_GUIDE.md
 *.md
 !DOCKERIZATION_REPORT.md
+!FRONTEND_BACKEND_DOCKERIZATION_PLAN.md
+!PROJECT_DIRECTION.md
+!DOCKER_ARCHITECTURE_SUMMARY.md
+!DEPLOYMENT.md
 !.env.example

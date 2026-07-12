@@ -1,0 +1,31 @@
+﻿name,category,price,target,features,pain_point,stock_status,linked_inquiry_id,linked_policy_id,product_url
+오버핏 코튼 블라우스,상의,39000,20대 여성,면 100%|데일리 스카이블루|S/M/L,사이즈 선택 문의가 많음,in_stock,INQ-1001,POL-1001,https://stylethread.invalid/products/amber-cotton-blouse
+슬림 데님 팬츠,하의,59000,20대 여성,슬림핏 중청 컬러|스판 원단|28-34 사이즈,화면 색상 차이에 민감도가 높음,in_stock,INQ-1002,POL-1002,https://stylethread.invalid/products/slim-denim-pants
+데일리 캔버스 백,가방,32000,대학생,가벼운 무게|A4 수납|내부 포켓|아이보리/블랙,배송 미수령 확인 요청이 발생할 수 있음,low_stock,INQ-1003,POL-1003,https://stylethread.invalid/products/daily-canvas-bag
+린넨 와이드 팬츠,하의,49000,직장인 여성,린넨 원단|와이드핏 허리 밴딩|베이지/네이비,반품 후 환불 일정 문의가 많음,in_stock,INQ-1004,POL-1004,https://stylethread.invalid/products/linen-wide-pants
+니트 반팔 가디건,아우터,45000,20대 여성,부드러운 니트|단추 여밈|크림/민트|프리사이즈,단추 불량 등 초기 검수 이슈 대응 필요,in_stock,INQ-1005,POL-1005,https://stylethread.invalid/products/knit-short-cardigan
+쿨링 기능성 티셔츠,상의,29000,운동 입문자,흡습속건|가벼운 소재|블랙/그레이|M/L/XL,착용 후 변심 문의 가능,in_stock,INQ-1006,POL-1006,https://stylethread.invalid/products/classic-crew-shirt
+라이트 트렌치 코트,아우터,129000,직장인 여성,생활 방수|허리 벨트|베이지/카키|S/M,배송 중 구김과 포장 상태 민감,in_stock,INQ-1007,POL-1007,https://stylethread.invalid/products/light-trench-coat
+스웨이드 로퍼,신발,79000,직장인 여성,쿠션 인솔|슬립온 밑창|브라운/블랙|250-280,사이즈 교환과 착화 흔적 판정 필요,in_stock,INQ-1008,POL-1008,https://stylethread.invalid/products/suede-loafer
+플리츠 미디 스커트,하의,54000,20대 여성,허리 밴딩|안감 포함|블랙/아이보리|S/M/L,주름 손상 여부 확인 필요,low_stock,INQ-1009,POL-1009,https://stylethread.invalid/products/pleats-midi-skirt
+베이지 후드 집업,아우터,62000,대학생,기모 안감|투웨이 지퍼|네이비/멜란지|M/L,지퍼 불량 교환 문의 가능,in_stock,INQ-1010,POL-1010,https://stylethread.invalid/products/beige-hooded-zipup
+미니멀 숄더백,가방,41000,출퇴근 고객,생활 방수|분리 수납|블랙/브라운|조절 스트랩,스트랩 부자재 누락 확인 필요,in_stock,INQ-1011,POL-1011,https://stylethread.invalid/products/minimal-shoulder-bag
+와이드 밴딩 슬랙스,하의,56000,직장인 여성,구김 방지|허리 밴딩|차콜/블랙|M/L/XL,수선 후 반품 불가 안내 필요,in_stock,INQ-1012,POL-1012,https://stylethread.invalid/products/wide-padding-slacks
+라운드넥 니트,상의,68000,겨울 의류 고객,울 혼방|부드러운 촉감|오트밀/그린|S/M,올 풀림과 소재 민감 문의 가능,in_stock,INQ-1013,POL-1013,https://stylethread.invalid/products/round-neck-knit
+하이웨이스트 쇼츠,하의,36000,여름 휴가 고객,하이웨이스트 코튼 원단|데일리 치마바지|S/M/L,착용 흔적 반품 판정 필요,in_stock,INQ-1014,POL-1014,https://stylethread.invalid/products/high-waist-shorts
+데일리 스니커즈,신발,69000,캐주얼 고객,경량창|쿠션 인솔|화이트/블랙|230-280,착화 후 교환 제한 안내 필요,in_stock,INQ-1015,POL-1015,https://stylethread.invalid/products/daily-sneakers
+터치블 셋업 점퍼,아우터,98000,스포티룩 고객,터치블 소재|셋업 가능|블랙/그레이|S/M/L,착용 후 훼손자 판정 문의 가능,in_stock,INQ-1016,POL-1016,https://stylethread.invalid/products/touchable-setup-jumper
+소프트 머플러,액세서리,25000,선물 구매 고객,부드러운 촉감|체크 패턴|선물 포장 가능,선물 포장 누락 문의 가능,in_stock,INQ-1017,POL-1017,https://stylethread.invalid/products/soft-muffler
+스트레이트 코튼 팬츠,하의,52000,데일리룩 고객,스트레이트핏|탄탄한 원단|크림/카키|S/M/L,색상 교환 문의가 많음,in_stock,INQ-1018,POL-1018,https://stylethread.invalid/products/straight-cotton-pants
+썸머 반팔 티셔츠,상의,22000,20대 여성,썸머 기장|탄탄한 라운드넥|화이트/핑크|S/M,사이즈 체감 차이 문의 가능,in_stock,INQ-1019,POL-1019,https://stylethread.invalid/products/summer-half-shirt
+유틸리티 백팩,가방,74000,직장인 여성,노트북 수납|생활 방수|블랙|대용량,수납 공간 설명 문의가 많음,in_stock,INQ-1020,POL-1020,https://stylethread.invalid/products/utility-backpack
+새틴 블라우스,상의,58000,하객룩 고객,은은한 광택|슬리브 핏|아이보리/블루|S/M,소재 비침 문의 가능,low_stock,INQ-1021,POL-1021,https://stylethread.invalid/products/satin-blouse
+코듀로이 후드 점퍼,아우터,76000,가을 의류 고객,코듀로이 소재|루즈핏|브라운/네이비|M/L,털 빠짐과 소재 특성 안내 필요,in_stock,INQ-1022,POL-1022,https://stylethread.invalid/products/corduroy-hood-jumper
+로우 플리츠 원피스,원피스,89000,직장인 여성,무릎 아래 기장|허리 스트랩|블랙/와인|S/M,행사 일정 전 배송 문의 가능,in_stock,INQ-1023,POL-1023,https://stylethread.invalid/products/low-pleats-onepiece
+리브드 탱크탑,상의,19000,레이어드 고객,골지 소재|슬림 데일리|블랙|S/M,속옷류 유사 카테고리 반품 제한 안내 필요,in_stock,INQ-1024,POL-1024,https://stylethread.invalid/products/ribbed-tank-top
+테일러드 조거 팬츠,하의,47000,애슬레저 고객,테일러드핏|스트레치 소재|블랙/그레이|M/L,보풀 발생 문의 가능,in_stock,INQ-1025,POL-1025,https://stylethread.invalid/products/tailored-jogger-pants
+슬렌더 벨트,액세서리,33000,직장인 여성,무광 메탈 버클|블랙/브라운|FREE,구멍 추가 가공 후 반품 제한 필요,in_stock,INQ-1026,POL-1026,https://stylethread.invalid/products/slender-belt
+퀼팅 패딩 베스트,아우터,84000,겨울 레이어드 고객,경량 패딩|투웨이 포켓|아이보리/블랙|S/M/L,충전재 뭉침 문의 가능,in_stock,INQ-1027,POL-1027,https://stylethread.invalid/products/quilting-padded-vest
+메리제인 플랫,신발,65000,20대 여성,둥근 앞코|버클 스트랩|블랙/크림|230-250,발볼과 교환 문의가 많음,low_stock,INQ-1028,POL-1028,https://stylethread.invalid/products/mary-jane-flat
+시어서커 파자마 세트,홈웨어,42000,홈웨어 고객,시어서커 소재|상하의 세트|체크 패턴|M/L,착용 후 교환 제한 안내 필요,in_stock,INQ-1029,POL-1029,https://stylethread.invalid/products/seersucker-pajama-set
+스키웨어 스크런치,액세서리,12000,소품 구매 고객,스키 소재|탄탄한 밴드|5컬러|세트 구매 가능,소액 주문 배송비 문의 가능,in_stock,INQ-1030,POL-1030,https://stylethread.invalid/products/skiwear-scrunchie

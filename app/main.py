@@ -10,7 +10,7 @@ from app.routers.threads_router import router as threads_router
 
 configure_logging()
 
-app = FastAPI(title="ShopBuddyBack API")
+app = FastAPI(title="SellerBuddy Backend API")
 
 
 def get_cors_origins() -> list[str]:
