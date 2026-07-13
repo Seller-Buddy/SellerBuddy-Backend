@@ -133,32 +133,3 @@ SellerBuddy-Backend/
 ├── requirements.txt     # Python 의존성
 └── .env.example         # 환경변수 예시
 ```
-
-## 테스트
-
-로컬 가상환경에 의존성을 설치한 후 다음 명령으로 백엔드 테스트를 실행합니다.
-
-```bash
-python -m unittest discover -s tests
-```
-
-프로젝트의 `.venv`를 사용하는 경우 다음과 같이 실행할 수 있습니다.
-
-```bash
-.venv/bin/python -m unittest discover -s tests
-```
-
-## 팀원
-
-| 이름 | 담당 역할 |
-| --- | --- |
-| 최유준 | 백엔드 마케팅 Agent, Docker |
-| 김정민 | 백엔드 CS Agent |
-| 김재현 | 프론트엔드, 발표 |
-
-## 주의사항
-
-- 이 프로젝트는 AI 에이전트 설계와 프론트엔드·백엔드 통합을 검증하기 위한 교육용 프로젝트입니다.
-- 현재 API에는 별도의 사용자 인증이 없으므로 공개된 운영 환경에 그대로 배포하지 마세요.
-- 고객 문의와 API 키 등 민감한 정보를 Git 저장소에 커밋하지 마세요.
-- Threads 게시 기능은 실제 외부 계정에 콘텐츠를 게시하므로 실행 전에 내용을 확인하세요.
