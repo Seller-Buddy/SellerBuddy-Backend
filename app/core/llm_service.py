@@ -18,9 +18,9 @@ def call_llm(prompt: str) -> str:
     if not os.getenv("UPSTAGE_API_KEY"):
         raise ValueError("UPSTAGE_API_KEY가 설정되어 있지 않습니다.")
 
-    logger.info("LLM 호출 시작: model=solar-pro2 프롬프트길이=%s", len(prompt))
+    logger.info("LLM 호출 시작: model=solar-pro3 프롬프트길이=%s", len(prompt))
     response = client.chat.completions.create(
-        model="solar-pro2",
+        model="solar-pro3",
         messages=[
             {
                 "role": "user",
