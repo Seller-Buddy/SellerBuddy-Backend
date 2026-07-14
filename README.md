@@ -81,6 +81,8 @@ docker compose up --build -d
 - API 문서: <http://localhost:3000/docs>
 - 상태 확인: <http://localhost:3000/health/live>
 
+**루트 폴더에 있는 csv를 사용하여 진행 가능합니다.**
+
 서비스를 종료하려면 다음 명령을 실행합니다.
 
 ```bash
